@@ -1,4 +1,3 @@
-
 import Navbar from "@/components/Navbar";
 import ParticleBackground from "@/components/ParticleBackground";
 import HeroSection from "@/components/HeroSection";
@@ -7,23 +6,29 @@ import Journey from "@/components/Journey";
 import Events from "@/components/Events";
 import JoinForm from "@/components/JoinForm";
 import Footer from "@/components/Footer";
+import { useLoading } from '../contexts/LoadingContext';
+import LoadingScreen from '@/components/LoadingScreen';
 
 const Index = () => {
+  const { isLoading } = useLoading();
+
   return (
-    <div className="min-h-screen bg-midnight overflow-hidden">
-      <ParticleBackground />
-      <Navbar />
-      
-      <main>
-        <HeroSection />
-        <AboutUs />
-        <Journey />
-        <Events />
-        <JoinForm />
-      </main>
-      
-      <Footer />
-    </div>
+    <>
+      {isLoading ? (
+        <LoadingScreen />
+      ) : (
+        <>
+          <ParticleBackground />
+          <Navbar />
+          <HeroSection />
+          <AboutUs />
+          <Journey />
+          <Events />
+          <JoinForm />
+          <Footer />
+        </>
+      )}
+    </>
   );
 };
 

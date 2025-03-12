@@ -1,5 +1,4 @@
-
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Calendar, Award, Users } from 'lucide-react';
 
 const Journey = () => {
@@ -66,34 +65,33 @@ const Journey = () => {
     },
   ];
 
-  const filteredEvents = activeCategory === 'all' 
-    ? events 
-    : events.filter(event => event.category === activeCategory);
+  // Memoize filtered events to prevent unnecessary recalculations
+  const filteredEvents = React.useMemo(() => 
+    activeCategory === 'all' 
+      ? events 
+      : events.filter(event => event.category === activeCategory),
+    [activeCategory]
+  );
 
+  // Optimize intersection observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          const index = parseInt(entry.target.getAttribute('data-index') || '0');
           if (entry.isIntersecting) {
+            const index = parseInt(entry.target.getAttribute('data-index') || '0');
             setIsVisible(prev => ({ ...prev, [index]: true }));
           }
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.1, rootMargin: '50px' }
     );
 
     const timelineItems = document.querySelectorAll('.timeline-item');
-    timelineItems.forEach(item => {
-      observer.observe(item);
-    });
+    timelineItems.forEach(item => observer.observe(item));
 
-    return () => {
-      timelineItems.forEach(item => {
-        observer.unobserve(item);
-      });
-    };
-  }, [filteredEvents]);
+    return () => observer.disconnect();
+  }, []);
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -167,43 +165,81 @@ const Journey = () => {
               <div
                 key={index}
                 data-index={index}
-                className={`relative flex flex-col md:flex-row gap-8 items-center md:items-start timeline-item`}
+                className={`relative flex flex-col md:flex-row items-center timeline-item animate-modern`}
               >
-                <div className={`w-full md:w-1/2 ${
-                  index % 2 === 0 
-                    ? 'md:text-right md:pr-12 transform transition-all duration-700 ' + (isVisible[index] ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0') 
-                    : 'md:order-last md:text-left md:pl-12 transform transition-all duration-700 ' + (isVisible[index] ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0')
-                }`}>
-                  <div className="neo-purple rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(139,92,246,0.3)] group">
-                    <div className="relative overflow-hidden">
-                      <img 
-                        src={event.image} 
-                        alt={event.title} 
-                        className="w-full h-56 object-cover transition-all duration-500 group-hover:scale-110 filter saturate-50 group-hover:saturate-100"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-deep-purple to-transparent opacity-60"></div>
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <div className="flex items-center gap-2 justify-start">
-                          <span className="bg-purple-accent/30 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium flex items-center border border-purple-accent/20">
-                            {getCategoryIcon(event.category)}
-                            <span className="ml-1">{event.category.charAt(0).toUpperCase() + event.category.slice(1)}</span>
-                          </span>
-                          <span className="text-white/90 text-sm bg-deep-purple/70 backdrop-blur-sm px-2 py-0.5 rounded">{event.date}</span>
+                {/* Left Column: Card for even events */}
+                <div className="w-full md:w-1/2 md:text-right">
+                  {index % 2 === 0 ? (
+                    <div className={`transform transition-all duration-700 ${isVisible[index] ? 'translate-x-0 opacity-100' : '-translate-x-20 opacity-0'}`}>
+                      {/* ...existing card content... */}
+                      <div className="neo-purple rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(139,92,246,0.3)] group">
+                        <div className="relative overflow-hidden">
+                          <img 
+                            src={event.image} 
+                            alt={event.title} 
+                            className="w-full h-56 object-cover transition-all duration-500 group-hover:scale-110 filter saturate-50 group-hover:saturate-100"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-deep-purple to-transparent opacity-60"></div>
+                          <div className="absolute bottom-4 left-4 right-4">
+                            <div className="flex items-center gap-2 justify-start">
+                              <span className="bg-purple-accent/30 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium flex items-center border border-purple-accent/20">
+                                {getCategoryIcon(event.category)}
+                                <span className="ml-1">{event.category.charAt(0).toUpperCase() + event.category.slice(1)}</span>
+                              </span>
+                              <span className="text-white/90 text-sm bg-deep-purple/70 backdrop-blur-sm px-2 py-0.5 rounded">{event.date}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-6">
+                          <h3 className="text-xl md:text-2xl font-semibold mb-2 text-gradient-purple">{event.title}</h3>
+                          <p className="text-white/80 text-sm leading-relaxed">{event.description}</p>
                         </div>
                       </div>
                     </div>
-                    <div className="p-6">
-                      <h3 className="text-xl md:text-2xl font-semibold mb-2 text-gradient-purple">{event.title}</h3>
-                      <p className="text-white/80 text-sm leading-relaxed">{event.description}</p>
-                    </div>
-                  </div>
+                  ) : (
+                    <div className="hidden md:block"></div>
+                  )}
                 </div>
-
+                {/* Center Column: Timeline Icon */}
                 <div className="hidden md:flex items-center justify-center z-10">
                   <div className={`w-14 h-14 rounded-full bg-purple-accent flex items-center justify-center shadow-lg shadow-purple-accent/30 border-4 border-deep-purple transition-all duration-500 ${isVisible[index] ? 'scale-100' : 'scale-0'}`}>
                     <span className="text-2xl">{getCategoryEmoji(event.category)}</span>
                   </div>
+                </div>
+                {/* Right Column: Card for odd events */}
+                <div className="w-full md:w-1/2 md:text-left">
+                  {index % 2 !== 0 ? (
+                    <div className={`transform transition-all duration-700 ${isVisible[index] ? 'translate-x-0 opacity-100' : 'translate-x-20 opacity-0'}`}>
+                      {/* ...existing card content... */}
+                      <div className="neo-purple rounded-xl overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(139,92,246,0.3)] group">
+                        <div className="relative overflow-hidden">
+                          <img 
+                            src={event.image} 
+                            alt={event.title} 
+                            className="w-full h-56 object-cover transition-all duration-500 group-hover:scale-110 filter saturate-50 group-hover:saturate-100"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-deep-purple to-transparent opacity-60"></div>
+                          <div className="absolute bottom-4 left-4 right-4">
+                            <div className="flex items-center gap-2 justify-start">
+                              <span className="bg-purple-accent/30 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium flex items-center border border-purple-accent/20">
+                                {getCategoryIcon(event.category)}
+                                <span className="ml-1">{event.category.charAt(0).toUpperCase() + event.category.slice(1)}</span>
+                              </span>
+                              <span className="text-white/90 text-sm bg-deep-purple/70 backdrop-blur-sm px-2 py-0.5 rounded">{event.date}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-6">
+                          <h3 className="text-xl md:text-2xl font-semibold mb-2 text-gradient-purple">{event.title}</h3>
+                          <p className="text-white/80 text-sm leading-relaxed">{event.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="hidden md:block"></div>
+                  )}
                 </div>
               </div>
             ))}
